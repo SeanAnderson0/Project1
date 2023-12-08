@@ -1,0 +1,8 @@
+from PyQt6.QtWidgets import QApplication
+from Project1 import VotingLogic
+
+if __name__ == "__main__":
+    app = QApplication([])
+    logic = VotingLogic()
+    logic.show()
+    app.exec()
