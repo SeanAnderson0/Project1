@@ -1,0 +1,155 @@
+from PyQt6.QtWidgets import QDialog, QMessageBox
+from Project.gui import Ui_VotingMenu
+
+
+class VotingSystem:
+    """Class to manage the voting system."""
+
+    def __init__(self) -> None:
+        """Initialize the voting system."""
+        self.candidate_votes = {'Cameron': 0, 'Allison': 0, 'Diego': 0}
+
+    def vote(self, selected_candidate_index: int) -> None:
+        """Record a vote for the selected candidate.
+
+        Args:
+            selected_candidate_index (int): Index of the selected candidate (1, 2, or 3).
+        """
+        try:
+            candidate_name = self.get_candidate_name(selected_candidate_index)
+            if candidate_name:
+                self.candidate_votes[candidate_name] += 1
+        except Exception as e:
+            QMessageBox.critical(None, "Error", f"An error occurred while processing the vote: {e}")
+
+    def get_total_votes(self) -> dict:
+        """Get the total votes for each candidate and the overall total.
+
+        Returns:
+            dict: A dictionary containing the vote counts for each candidate and the total.
+        """
+        try:
+            total_votes = {'Cameron': self.candidate_votes['Cameron'], 'Allison': self.candidate_votes['Allison'], 'Diego': self.candidate_votes['Diego']}
+            total_votes['Total'] = sum(total_votes.values())
+            return total_votes
+        except Exception as e:
+            QMessageBox.critical(None, "Error", f"An error occurred while retrieving total votes: {e}")
+            return {}
+
+    def get_vote_count(self, selected_candidate_index: int) -> int:
+        """Get the vote count for a specific candidate.
+
+        Args:
+            selected_candidate_index (int): Index of the candidate (1, 2, or 3).
+
+        Returns:
+            int: The vote count for the selected candidate.
+        """
+        try:
+            candidate_name = self.get_candidate_name(selected_candidate_index)
+            return self.candidate_votes.get(candidate_name, 0)
+        except Exception as e:
+            QMessageBox.critical(None, "Error", f"An error occurred while retrieving vote count: {e}")
+            return 0
+
+    def get_candidate_name(self, selected_candidate_index: int) -> str:
+        """Get the name of the candidate based on the index.
+
+        Args:
+            selected_candidate_index (int): Index of the candidate (1, 2, or 3).
+
+        Returns:
+            str: The name of the candidate.
+        """
+        try:
+            if selected_candidate_index == 1:
+                return 'Cameron'
+            elif selected_candidate_index == 2:
+                return 'Allison'
+            elif selected_candidate_index == 3:
+                return 'Diego'
+            else:
+                return None
+        except Exception as e:
+            QMessageBox.critical(None, "Error", f"An error occurred while retrieving candidate name: {e}")
+            return None
+
+
+class VotingLogic(QDialog, Ui_VotingMenu):
+    """Class representing the logic behind the voting GUI."""
+
+    def __init__(self) -> None:
+        """Initialize the voting logic."""
+        super().__init__()
+
+        self.setupUi(self)
+
+        self.voting_system = VotingSystem()
+
+        self.VoteButton.clicked.connect(self.vote_menu)
+        self.ExitButton.clicked.connect(self.exit_program)
+
+        self.candidate_buttons = [self.CandidateButton1, self.CandidateButton2, self.CandidateButton3]
+        self.vote_count_labels = [self.VoteCount1, self.VoteCount2, self.VoteCount3]
+
+        for i, button in enumerate(self.candidate_buttons, start=1):
+            button.clicked.connect(lambda _, idx=i: self.vote_for_candidate(idx))
+
+        self.update_vote_counts()
+
+    def vote_menu(self) -> None:
+        """Handle the voting menu actions."""
+        try:
+            selected_candidate_index = self.get_selected_candidate_index()
+            if selected_candidate_index:
+                self.voting_system.vote(selected_candidate_index)
+                QMessageBox.information(self, "Success", f"Voted for candidate {selected_candidate_index}")
+                self.update_vote_counts()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An error occurred during voting: {e}")
+
+    def vote_for_candidate(self, selected_candidate_index: int) -> None:
+        """Handle voting for a specific candidate.
+
+        Args:
+            selected_candidate_index (int): Index of the candidate (1, 2, or 3).
+        """
+        try:
+            self.CandidateButton1.setChecked(False)
+            self.CandidateButton2.setChecked(False)
+            self.CandidateButton3.setChecked(False)
+            self.candidate_buttons[selected_candidate_index - 1].setChecked(True)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An error occurred while processing vote for a candidate: {e}")
+
+    def exit_program(self) -> None:
+        """Handle the exit action."""
+        try:
+            total_votes = self.voting_system.get_total_votes()
+            QMessageBox.information(self, "Total Votes", f'Cameron- {total_votes["Cameron"]}, Allison- {total_votes["Allison"]}, Diego- {total_votes["Diego"]}, Total- {total_votes["Total"]}.')
+            self.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An error occurred during exit: {e}")
+
+    def get_selected_candidate_index(self) -> int:
+        """Gets the index of the selected candidate.
+
+        Returns:
+            int: Index of the selected candidate (1, 2, or 3).
+        """
+        try:
+            for i, button in enumerate(self.candidate_buttons, start=1):
+                if button.isChecked():
+                    return i
+            return 0
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An error occurred while retrieving selected candidate index: {e}")
+            return 0
+
+    def update_vote_counts(self) -> None:
+        """Updates the displayed vote counts on the GUI."""
+        try:
+            for i, label in enumerate(self.vote_count_labels, start=1):
+                label.setText(str(self.voting_system.get_vote_count(i)))
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An error occurred while updating vote counts: {e}")
