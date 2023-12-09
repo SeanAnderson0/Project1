@@ -12,7 +12,7 @@ class VotingSystem:
     def vote(self, selected_candidate_index: int) -> None:
         """Record a vote for the selected candidate.
 
-        Args:
+        Arguments:
             selected_candidate_index (int): Index of the selected candidate (1, 2, or 3).
         """
         try:
@@ -37,13 +37,13 @@ class VotingSystem:
             return {}
 
     def get_vote_count(self, selected_candidate_index: int) -> int:
-        """Get the vote count for a specific candidate.
+        """Gets the vote count for a specific candidate.
 
-        Args:
+        Arguments:
             selected_candidate_index (int): Index of the candidate (1, 2, or 3).
 
         Returns:
-            int: The vote count for the selected candidate.
+            The vote count for the selected candidate.
         """
         try:
             candidate_name = self.get_candidate_name(selected_candidate_index)
@@ -55,11 +55,11 @@ class VotingSystem:
     def get_candidate_name(self, selected_candidate_index: int) -> str:
         """Get the name of the candidate based on the index.
 
-        Args:
+        Arguments:
             selected_candidate_index (int): Index of the candidate (1, 2, or 3).
 
         Returns:
-            str: The name of the candidate.
+            The name of the candidate.
         """
         try:
             if selected_candidate_index == 1:
@@ -81,20 +81,14 @@ class VotingLogic(QDialog, Ui_VotingMenu):
     def __init__(self) -> None:
         """Initialize the voting logic."""
         super().__init__()
-
         self.setupUi(self)
-
         self.voting_system = VotingSystem()
-
         self.VoteButton.clicked.connect(self.vote_menu)
         self.ExitButton.clicked.connect(self.exit_program)
-
         self.candidate_buttons = [self.CandidateButton1, self.CandidateButton2, self.CandidateButton3]
         self.vote_count_labels = [self.VoteCount1, self.VoteCount2, self.VoteCount3]
-
         for i, button in enumerate(self.candidate_buttons, start=1):
             button.clicked.connect(lambda _, idx=i: self.vote_for_candidate(idx))
-
         self.update_vote_counts()
 
     def vote_menu(self) -> None:
@@ -111,7 +105,7 @@ class VotingLogic(QDialog, Ui_VotingMenu):
     def vote_for_candidate(self, selected_candidate_index: int) -> None:
         """Handle voting for a specific candidate.
 
-        Args:
+        Arguments:
             selected_candidate_index (int): Index of the candidate (1, 2, or 3).
         """
         try:
