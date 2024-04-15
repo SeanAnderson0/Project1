@@ -1,86 +1,130 @@
+	.cpu arm7tdmi
+	.eabi_attribute 20, 1
+	.eabi_attribute 21, 1
+	.eabi_attribute 23, 3
+	.eabi_attribute 24, 1
+	.eabi_attribute 25, 1
+	.eabi_attribute 26, 1
+	.eabi_attribute 30, 6
+	.eabi_attribute 34, 0
+	.eabi_attribute 18, 4
+	.file	"calling.c"
+	.text
+	.syntax divided
+	
 
-// ============================================================
-//
-// tracktwo.c
-//
-// This is the starter program for the track two C assignment.
-//
-// This version is specifically for ARMSIM.
-// Compile using the Gnu ARM compiler on Windows via:
-//
-// arm-none-eabi-gcc -marm -S calling.c
-//
-// Then run the resulting assembly on ARMSIM. On the Windows VM the
-// compiler is in the path already but just in case it is in:
-// c:\Program Files (x86)\GNU Tools ARM Embedded\arm-none-eabi\bin
-//
-// There's some changes in here, of course. For one thing the arrays
-// are declared globally so that it is easier to see them in the
-// ARMsim memory dump. All the I/O is for the simulator.
-//
-// Modified for a changed assignment where they just do the expand
-// and byte_at functions. This calls their code and then displays the
-// results on stdout, so they appear in the simulator under the i/o
-// tab.
-//
-// Author: Bill
-// For: CYBR 2250
-//
-// ============================================================
-void expand( const char hex[], char binstring[] );
-char byte_at( int position, const char binstring[] );
-#define IN_SIZE 40 // 40 characters per data line
-#define EXPAND_SIZE (IN_SIZE*4) // Expanded to ASCII string
-#define TRUE 1
-#define FALSE 0
-// ============================================================
-//
-// Tie in functions for the simulator.
-//
-// ============================================================
-int swi_open( char *name, int mode );
-int swi_close( int fd );
-int swi_read( int fd, char *dest, unsigned int n );
-void swi_write( int fd, char *str );
-// If using the -std=c1x standard use __asm__ instead of just asm
-__asm__( "\n\n\n"
-"@ ============================\n"
-"@ Bill's glue logic for ARMsim\n"
-"@ ============================\n"
-"swi_open: swi 0x66\n"
-" mov pc, lr\n\n"
-"swi_close: swi 0x68\n"
-" mov pc, lr\n\n"
-"swi_read: swi 0x6a\n"
-" mov pc, lr\n\n"
-"swi_write: swi 0x69\t@ Write string to stdout\n"
-" mov pc, lr\n\n"
-);
-// ============================================================
-//
-// Start here...
-//
-// ============================================================
-char data[ IN_SIZE + 3 ]; // 1 for '\r', 1 for '\n', 1 for the
-null
-char expanded[ EXPAND_SIZE + 1 ]; // 1 for null
-char outstring[ EXPAND_SIZE / 4 + 2 ]; // 1 for newline 1 for null
-int main( int ac, char *av[] )
-{
-int fd = swi_open( "\\Users\\Student\\Desktop\\T2DATA.TXT", 0 ); // Read-only
-// We want the newline and null so things stay in sync.
-while ( swi_read( fd, data, IN_SIZE + 3 ) >= 40 )
-{
-// Here, "data" is a string with 40 hex characters
-expand( data, expanded );
-// The assignment jumps by fours. Trust me, this is right.
-int i;
-for( i = 0; i < ( EXPAND_SIZE - 5 ) / 4 + 1; i++ )
-outstring[ i ] = byte_at( i * 4, expanded );
-outstring[ i++ ] = '\n';
-outstring[ i++ ] = '\0';
-swi_write( 1, outstring );
-}
-swi_close( fd );
-return( 0 );
-}
+
+@ ============================
+@ Bill's glue logic for ARMsim
+@ ============================
+swi_open:        swi   0x66
+                 mov   pc, lr
+
+swi_close:       swi   0x68
+                 mov   pc, lr
+
+swi_read:        swi   0x6a
+                 mov   pc, lr
+
+swi_write:       swi   0x69	@ Write string to stdout
+                 mov   pc, lr
+
+
+	.arm
+	.syntax unified
+	.comm	data,43,4
+	.comm	expanded,161,4
+	.comm	outstring,42,4
+	.section	.rodata
+	.align	2
+.LC0:
+	.ascii	"\\Users\\Student\\Desktop\\T2DATA.TXT\000"
+	.text
+	.align	2
+	.global	main
+	.arch armv4t
+	.syntax unified
+	.arm
+	.fpu softvfp
+	.type	main, %function
+main:
+	@ Function supports interworking.
+	@ args = 0, pretend = 0, frame = 16
+	@ frame_needed = 1, uses_anonymous_args = 0
+	push	{fp, lr}
+	add	fp, sp, #4
+	sub	sp, sp, #16
+	str	r0, [fp, #-16]
+	str	r1, [fp, #-20]
+	mov	r1, #0
+	ldr	r0, .L7
+	bl	swi_open
+	str	r0, [fp, #-12]
+	b	.L2
+.L5:
+	ldr	r1, .L7+4
+	ldr	r0, .L7+8
+	bl	expand
+	mov	r3, #0
+	str	r3, [fp, #-8]
+	b	.L3
+.L4:
+	ldr	r3, [fp, #-8]
+	lsl	r3, r3, #2
+	ldr	r1, .L7+4
+	mov	r0, r3
+	bl	byte_at
+	mov	r3, r0
+	mov	r1, r3
+	ldr	r2, .L7+12
+	ldr	r3, [fp, #-8]
+	add	r3, r2, r3
+	mov	r2, r1
+	strb	r2, [r3]
+	ldr	r3, [fp, #-8]
+	add	r3, r3, #1
+	str	r3, [fp, #-8]
+.L3:
+	ldr	r3, [fp, #-8]
+	cmp	r3, #38
+	ble	.L4
+	ldr	r3, [fp, #-8]
+	add	r2, r3, #1
+	str	r2, [fp, #-8]
+	ldr	r2, .L7+12
+	mov	r1, #10
+	strb	r1, [r2, r3]
+	ldr	r3, [fp, #-8]
+	add	r2, r3, #1
+	str	r2, [fp, #-8]
+	ldr	r2, .L7+12
+	mov	r1, #0
+	strb	r1, [r2, r3]
+	ldr	r1, .L7+12
+	mov	r0, #1
+	bl	swi_write
+.L2:
+	mov	r2, #43
+	ldr	r1, .L7+8
+	ldr	r0, [fp, #-12]
+	bl	swi_read
+	mov	r3, r0
+	cmp	r3, #39
+	bgt	.L5
+	ldr	r0, [fp, #-12]
+	bl	swi_close
+	mov	r3, #0
+	mov	r0, r3
+	sub	sp, fp, #4
+	@ sp needed
+	pop	{fp, lr}
+	bx	lr
+.L8:
+	.align	2
+.L7:
+	.word	.LC0
+	.word	expanded
+	.word	data
+	.word	outstring
+	.size	main, .-main
+	.ident	"GCC: (GNU Tools for Arm Embedded Processors 8-2018-q4-major) 8.2.1 20181213 (release) [gcc-8-branch revision 267074]"
