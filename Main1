@@ -1,8 +1,82 @@
-from PyQt6.QtWidgets import QApplication
-from Project1 import VotingLogic
+.text
+.align 4
+.global expand
 
-if __name__ == "__main__":
-    app = QApplication([])
-    logic = VotingLogic()
-    logic.show()
-    app.exec()
+expand:
+    @ Need to push r4-r6 and the LR to the stack.
+    push {r4-r6, lr}
+
+    @ Move the character for the number 1 (i.e. #'1') to r5
+    mov r5, #'1'
+
+    @ Move the character for the number 0 to r6.
+    mov r6, #'0'
+
+    @ Initialize counter for the output binstring
+    mov r3, #0
+
+loop:
+    @ Load 1 byte from the address in r0 into r4.
+    ldrb r4, [r0], #1
+
+    @ Check for end of input hex string
+    cmp r4, #0
+    beq done
+
+    @ Convert hex character to binary and store in binstring
+    @ Check if the character is between '0' and '9'
+    cmp r4, #'0'
+    blt not_digit
+    cmp r4, #'9'
+    bleq is_digit
+not_digit:
+    @ If the character is not between '0' and '9', it must be between 'A' and 'F'
+    @ Adjust the character to be in the range '0' to '5'
+    sub r4, r4, #'A' - 10
+is_digit:
+    @ Convert the hex character to its binary equivalent
+    @ For each bit in the hex character
+    mov r7, #4
+    and r4, r4, #0xF  @ Mask out all bits except the least significant 4 bits
+bitloop:
+    lsl r4, r4, #1  @ Shift left to move the next bit into the least significant position
+    @ Store the bit as '1' or '0' in binstring
+    strb r4, [r1, r3]
+    add r3, r3, #1  @ Move to the next position in binstring
+    subs r7, r7, #1
+    bne bitloop
+
+    b loop
+
+done:
+    @ Terminate the binstring with null character
+    mov r4, #0
+    strb r4, [r1, r3]
+
+    @ Restore registers and return
+    pop {r4-r6, pc}
+
+.text
+.align 4
+.global byte_at
+
+byte_at:
+    @ Multiply position by 5 to get the starting index of the group of 5 binary characters
+    mov r2, #5
+    mul r0, r0, r2
+
+    @ Calculate the address of the starting position in binstring
+    add r1, r1, r0
+
+    @ Initialize r0 with 'E' (error) character in case of invalid group
+    mov r0, #'E'
+
+    @ Load the 5 binary characters from binstring
+    ldrb r2, [r1]
+
+    @ Check the parity bit (first bit)
+    tst r2, #0x10
+    moveq r0, r2  @ If parity is correct, move the character to r0
+
+    @ Move to the next line of the calling function
+    mov pc, lr
