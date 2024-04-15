@@ -1,0 +1,79 @@
+.text
+.align 4
+.global expand
+
+expand:
+    @ Need to push r4-r6 and the LR to the stack.
+    push {r4-r6, lr}
+
+    @ Move the character for the number 1 (i.e. #'1') to r5
+    mov r5, #'1'
+
+    @ Move the character for the number 0 to r6.
+    mov r6, #'0'
+
+loop:
+    @ Load 1 byte from the address in r0 into r4.
+    ldrb r4, [r0], #1
+
+    @ Compare r4 to the hex value for 0. If equal, exit loop.
+    cmp r4, #0
+    beq done
+
+    @ Compare r4 to the character for 9
+    cmp r4, #'9'
+    suble r4, r4, #0x30 @ If less than or equal to '9', subtract 0x30
+    subgt r4, r4, #0x37 @ If greater than '9', subtract 0x37
+
+    @ Test bits in r4
+    tst r4, #0x08
+    strneb r5, [r1], #1  @ Store '1' if bit is set
+    streqb r6, [r1], #1  @ Store '0' if bit is not set
+
+    tst r4, #0x04
+    strneb r5, [r1], #1
+    streqb r6, [r1], #1
+
+    tst r4, #0x02
+    strneb r5, [r1], #1
+    streqb r6, [r1], #1
+
+    tst r4, #0x01
+    strneb r5, [r1], #1
+    streqb r6, [r1], #1
+
+    b loop
+
+done:
+    pop {r4-r6, pc}  @ Restore registers and return
+
+.text
+.align 4
+.global byte_at
+
+byte_at:
+    add r1, r1, r0   @ Add r0 to r1 for the address of the current 5 binary characters
+    mov r0, #0       @ Zero out r0 since the return values are going into r0
+
+    @ Load a byte into r2 from the address in r1, plus 1
+    ldrb r2, [r1], #1
+
+    @ Compare r2 to the character '1'
+    cmpeq r2, #'1'
+    orreq r0, r0, #0x10  @ If equal, turn on the corresponding bit
+
+    @ Repeat the above step for 0x08, 0x04, 0x02, and 0x01
+    cmpeq r2, #'0' + 1
+    orreq r0, r0, #0x08
+
+    cmpeq r2, #'0' + 2
+    orreq r0, r0, #0x04
+
+    cmpeq r2, #'0' + 3
+    orreq r0, r0, #0x02
+
+    cmpeq r2, #'0' + 4
+    orreq r0, r0, #0x01
+
+    @ Move to the next line of the calling function
+    mov pc, lr
