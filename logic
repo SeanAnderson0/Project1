@@ -1,0 +1,34 @@
+	@ expand function.  This is one way to do it. I won't give you the code, but here is the logic.  You should know the instructions and modifiers (e.g. suble or subgt is subract less than or equal to or subtract greater than)
+
+
+	.text
+	.align 	4
+	.global	expand @This is how to make a function global.  
+expand:	
+	@Need to push r4-r6 and the LR to the stack.
+
+	@I move the character for the number 1 (i.e. #'1') to r5
+	@I move the character for the number 0 to r6.  Why would I do this?
+	
+loop:	@In the first line of the loop, I ldrb 1 byte from the address in r0 (i.e. [r0], #1) into r4.
+	@I then compare that byte to the hex value for 0.  If they are equal, I branch to 'done' or whatever you want to call your exit function, which pops r4-r6 and also the lr into the pc.
+	
+	@Otherwise, I compare r4 to the character for 9 (i.e. #'9').  If it is less than or equal to, I subtract #0x30 because it is between 0-9, but if is greater than or equal to, then I subtract 0x37.  Why do I have these two lines of code? Because if it is greater than, then it has to be A-F in hex.  Go look at an ASCII table to see where '0' to '9' versus 'A' to 'F' lay, and their corresponding hex values.
+
+	@Next test (TST) what is in r4 against 0x08, then 0x04, then 0x02 and then 0x01.  Why? Because you are effectively testing to see which bits are "on" or "off" in the byte in r4.  Look up the TST instruction for reference.  After each TST, store the resultant byte in r5 if not equal (strneb) or in r6 if it is equal (streqb).  Then after all that, branch back to the loop. 
+
+	@ byte_at
+
+	.text
+	.align 	4
+	.global	byte_at
+	
+byte_at:
+
+	@add to r1 whatever is in r0 for the address of the current 5 binary characters.
+	@ zero out r0 since the return values are going into r0
+	@ ldrb a byte into r2 from the address in r1, plus 1; this gets the next character. Then compare r2 to the character  '1', and if equal, turn on the correlating bit by using bitwise 'orr' with the 'eq' modifier (i.e. orreq) on what is in r0 with 0x10, and store that result in r0.
+	@ The aforementioned step is three lines long.  Repeat this step exactly, except 'orreq' with 0x08, then 0x04, then 0x02 and then 0x01.  Each time, you are turning on the corresponding bit if the two are equal. 
+	@ldr into r1 the TXT2DATA file with the input.
+	@ Then ldrb into r0 the combined address of base address r1, and offset r0 (i.e. ldrb r0 [r1, r0])
+	@ Last step is literally: mov pc, lr (move the content of the link register into the program counter to get back to the NEXT LINE of the calling function).
